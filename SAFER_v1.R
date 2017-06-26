@@ -2,7 +2,7 @@
 #Implementation of SAFER: mass Spectrometry data Analysis by Filtering of Experimental Replicates (Zhou et al. 2016)
 #
 #
-#Coded by: Jonatan Fernández García         Jonifg@usal.es
+#Coded by:    Jonatan Fernández García        Jonifg@usal.es
 #Reviewed by: Rodrigo García Valiente         Rodrigo.garcia.valiente@gmail.com
 #
 #Version: 1. 2017-06-22
