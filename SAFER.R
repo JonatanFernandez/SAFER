@@ -7,7 +7,7 @@
 #
 #Version: 1.1 2017-06-29
 #
-#To Do: -Further error handling. Further documentation of the output.
+#To Do: -Further error handling. Further documentation of the output. Fixing WriteTables commented line at the end.
 #------------------------------------------------------
 
 
