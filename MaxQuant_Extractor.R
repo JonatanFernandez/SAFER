@@ -4,12 +4,12 @@
 #Coded by:    Jonatan Fernandez Garcia        Jonifg@usal.es
 #Reviewed by: Rodrigo Garcia Valiente         Rodrigo.garcia.valiente@gmail.com
 #
-#Version: 1. 2017-06-28
+#Version: 1. 2017-06-26
 #
 #---------------------------------------------------------------
 
 #------------------------
-#     Dynamic Input
+#         Data
 #------------------------
 
 ProteinGroups = read.csv(file.choose(), header = TRUE, sep = "\t", dec = ".", stringsAsFactors = FALSE)
@@ -104,8 +104,7 @@ MQ_ProteinGroups_2_SAFER <- function(df, Intensities = "LFQ", CountsCutoff=2, RC
          "Intensities" = {df = ExtractIntensities(df)}
   )
 }
-                                                         
-#Usage:
+
 LFQ2 <- MQ_ProteinGroups_2_SAFER(ProteinGroups,Intensities = "LFQ", CountsCutoff = 2)
 LFQ4 <- MQ_ProteinGroups_2_SAFER(ProteinGroups,Intensities = "LFQ", CountsCutoff = 4)
 LFQ6 <- MQ_ProteinGroups_2_SAFER(ProteinGroups,Intensities = "LFQ", CountsCutoff = 6)
