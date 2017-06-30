@@ -5,9 +5,9 @@
 #Coded by:    Jonatan Fernández García        Jonifg@usal.es
 #Reviewed by: Rodrigo García Valiente         Rodrigo.garcia.valiente@gmail.com
 #
-#Version: 1.1 2017-06-29
+#Version: 1.2 2017-06-30
 #
-#To Do: -Further error handling. Further documentation of the output. Fixing WriteTables commented line at the end.
+#To Do: -Further error handling. Further documentation of the output.
 #------------------------------------------------------
 
 
@@ -43,7 +43,7 @@ Exps <- c("exp1","exp2","exp3","exp4")
 #' @return A dataframe of proteins selected as potential interactive protein candidates, and three other dataframes of protein discarded in the SAFER filters,
 #'         all of them together with their fold change.
 #     
-SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportCSVs = TRUE) {
+SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportTables = TRUE) {
   
   #-------------------------------------------------
   #                 Helper Functions 
@@ -114,9 +114,17 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportCSVs = 
     return(list(Selected = TriplicateFilterSelected, Discarded = TriplicateFilterDiscarded))
   }
   
+  #Output
+  
+  Output <- function(df,filename,output) {
+    write.table(df, file = paste(filename,"_",deparse(substitute(output)),".txt"), sep = "\t", dec=".")
+  }
+  
   #-------------------------------------------------
   #           SAFER Core Function Execution
   #-------------------------------------------------
+  
+  DataframeName <- deparse(substitute(x))
   #Select columns from dataset
   
   if(FirstColAreProteinIds){
@@ -127,8 +135,8 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportCSVs = 
   }
   
   #Execution of filters
-  x <- FoldChangeCalculator(x, Exps = Exps, Controls = Controls)
-  FirstFiltered <- SAFERFirstFilter(x, Exps)
+  df_FC <- FoldChangeCalculator(x, Exps = Exps, Controls = Controls)
+  FirstFiltered <- SAFERFirstFilter(df_FC, Exps)
   SecondFiltered <- SAFERSecondFilter(FirstFiltered$Selected, Controls)
   FCFiltered <- SAFERFCFilter(SecondFiltered$MostlyPresent)
   SelectedPreys <- rbind(SecondFiltered$MostlyAbsent, FCFiltered$Selected)
@@ -142,12 +150,12 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportCSVs = 
     FirstFilterDiscarded = setNames(data.frame(rownames(FirstFiltered$Discarded), FirstFiltered$Discarded$FC),c("Discarded: # of Exps < 3", "|Fold Change"))
     FCFilterDiscarded = setNames(data.frame(rownames(FCFiltered$Discarded),FCFiltered$Discarded$FC),c("Discarded: Fold Change < 2","|Fold Change"))
     TriplicateFilterDiscarded = setNames(data.frame(rownames(TriplicateFilter$Discarded),TriplicateFilter$Discarded$FC),c("Discarded: Max(Control) > Min(Exps)","|Fold Change"))
-    # if(ExportCSVs){
-    #   write.table(TriplicateFilter$Selected, file = paste(x,"SelectedPreys.txt"),sep = "\t", dec = ".")
-    #   write.table(FirstFiltered$Discarded, file = paste(x,"FirstFilterDiscarded.txt"),sep = "\t", dec = ".")
-    #   write.table(FCFiltered$Discarded, file=paste(x,"FoldChangeFilterDiscarded.txt"),sep = "\t", dec = ".")
-    #   write.table(TriplicateFilter$Discarded, file=paste(x,"TriplicateFilterDiscarded.txt"),sep = "\t", dec = ".")
-    # }
+    if(ExportTables){
+      Output(df = SelectedPreys, filename = DataframeName, output = SelectedPreys)
+      Output(df = FirstFilterDiscarded, filename = DataframeName, output = FirstFilterDiscarded)
+      Output(df = FCFilterDiscarded, filename = DataframeName, output = FoldChangeDiscarded)
+      Output(df = TriplicateFilterDiscarded, filename = DataframeName, output = TriplicateFilterDiscarded)
+    }
     return(list(SelectedPreys = SelectedPreys, FirstFilterDiscarded = FirstFilterDiscarded,
                 FCFilterDiscarded = FCFilterDiscarded,TriplicateFilterDiscarded = TriplicateFilterDiscarded
                 ))
@@ -157,11 +165,11 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportCSVs = 
     SelectedPreys = setNames(data.frame(rownames(SelectedPreys),SelectedPreys$FC),c("Selected Preys","|Fold Change"))
     FirstFilterDiscarded = setNames(data.frame(rownames(FirstFiltered$Discarded), FirstFiltered$Discarded$FC),c("Discarded: # of Exps < 3", "|Fold Change"))
     FCFilterDiscarded = setNames(data.frame(rownames(FCFiltered$Discarded),FCFiltered$Discarded$FC),c("Discarded: Fold Change < 2","|Fold Change"))
-    # if(ExportCSVs){
-    #   write.table(SelectedPreys, file = paste(x,"SelectedPreys.txt"),sep = "\t", dec = ".")
-    #   write.table(FirstFiltered$Discarded, file = paste(x,"FirstFilterDiscarded.txt"),sep = "\t", dec = ".")
-    #   write.table(FCFiltered$Discarded, file=paste(x,"FoldChangeFilterDiscarded.txt"),sep = "\t", dec = ".")
-    # }
+    if(ExportTables){
+      Output(df = SelectedPreys, filename = DataframeName, output = SelectedPreys)
+      Output(df = FirstFilterDiscarded, filename = DataframeName, output = FirstFilterDiscarded)
+      Output(df = FCFilterDiscarded, filename = DataframeName, output = FoldChangeDiscarded)
+    }
     return(list(SelectedPreys = SelectedPreys, 
                 FirstFilterDiscarded = FirstFilterDiscarded,
                 FCFilterDiscarded = FCFilterDiscarded
@@ -169,8 +177,7 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportCSVs = 
   }
 }
   
-#Usage:
+#UsageExample:
 setwd("~/R")
 
 ExampleResults = SAFER(x=ProteinData,Controls = Controls, Exps = Exps, FirstColAreProteinIds = FALSE, ExportCSVs = TRUE)
-
