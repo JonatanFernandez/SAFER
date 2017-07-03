@@ -52,31 +52,42 @@ MQ_ProteinGroups_2_SAFER <- function(df, Intensities = "LFQ", CountsCutoff=2, RC
   #PeptideCoutnsFilter: Discards ProteinIds if Unique or Razor peptide coutns are lower than the Cutoff (n=2 by default, defined in Corefunction)
   
   PeptideCountsFilter <- function(df, CountsCutoff=CountsCutoff) {
-    df$Peptide.counts..razor.unique.List = strsplit(df$Peptide.counts..razor.unique.,";")
-    df$Protein.IDs.List = strsplit(df$Protein.IDs,";")
-    if(all(lengths(df$Peptide.counts..razor.unique.List) == lengths(df$Protein.IDs.List))){
-      BooleanList = lapply(df$Peptide.counts..razor.unique.List, function(x) x >= CountsCutoff)
-      for (i in 1:length(BooleanList)) {
-        df$Protein.IDs.List[[i]] = df$Protein.IDs.List[[i]][BooleanList[[i]]]
-        df$Peptide.counts..razor.unique.List[[i]] = df$Peptide.counts..razor.unique.List[[i]][BooleanList[[i]]]
-      }
-      n<-1
-      deleteindexes <- list()
-      for (i in 1:length(df$Protein.IDs.List)){
-        if (identical(df$Protein.IDs.List[[i]], character(0))){
-          deleteindexes[n] <- i
-          n <- n+1
+    CountsCutoff = as.integer(CountsCutoff)
+    if (CountsCutoff == 0) {
+      dfFiltered = df
+    } else if (CountsCutoff >= 1) {
+      df$Peptide.counts..razor.unique.List = strsplit(df$Peptide.counts..razor.unique.,";")
+      df$Protein.IDs.List = strsplit(df$Protein.IDs,";")
+      if(all(lengths(df$Peptide.counts..razor.unique.List) == lengths(df$Protein.IDs.List))){
+        BooleanList = lapply(df$Peptide.counts..razor.unique.List, function(x) x >= CountsCutoff)
+        for (i in 1:length(BooleanList)) {
+          df$Protein.IDs.List[[i]] = df$Protein.IDs.List[[i]][BooleanList[[i]]]
+          df$Peptide.counts..razor.unique.List[[i]] = df$Peptide.counts..razor.unique.List[[i]][BooleanList[[i]]]
         }
+        
+        n<-1
+        deleteindexes <- list()
+        
+        for (i in 1:length(df$Protein.IDs.List)){
+          if (identical(df$Protein.IDs.List[[i]], character(0))){
+            deleteindexes[n] <- i
+            n <- n+1
+          }
+        }
+        
+        dfFiltered <- df[-unlist(deleteindexes),]
+        dfFiltered$Protein.IDs <- sapply(dfFiltered$Protein.IDs.List ,function(x) paste(as.character(x), collapse=";"))
+        dfFiltered$Peptide.counts..razor.unique. <- sapply(dfFiltered$Peptide.counts..razor.unique.List ,function(x) paste(as.character(x), collapse=";"))
+        DropColumns <- c("Protein.IDs.List","Peptide.counts..razor.unique.List")
+        dfFiltered <- dfFiltered[,!(names(dfFiltered) %in% DropColumns)]
+      }else{
+        return(print("Error, mismatch with peptide counts and Protein IDs, please check"))
       }
-      dfFiltered <- df[-unlist(deleteindexes),]
-      dfFiltered$Protein.IDs <- sapply(dfFiltered$Protein.IDs.List ,function(x) paste(as.character(x), collapse=";"))
-      dfFiltered$Peptide.counts..razor.unique. <- sapply(dfFiltered$Peptide.counts..razor.unique.List ,function(x) paste(as.character(x), collapse=";"))
-      DropColumns <- c("Protein.IDs.List","Peptide.counts..razor.unique.List")
-      dfFiltered <- dfFiltered[,!(names(dfFiltered) %in% DropColumns)]
-      return(dfFiltered)
-    }else{
-      return(print("Error, mismatch with peptide counts and Protein IDs, please check"))
+    } else {
+      print("CountsCutOff Must be a positive integer")
+      return(NULL)
     }
+    return(dfFiltered)
   }
   
   #Intensities extractor functions:
@@ -96,8 +107,13 @@ MQ_ProteinGroups_2_SAFER <- function(df, Intensities = "LFQ", CountsCutoff=2, RC
   #------------------------
   #   Core execution
   #------------------------
-  df <- RCBSFilter(df)
+  originalEntries <- length(unlist(df$Protein.IDs))
+  if(RCBS){
+    df <- RCBSFilter(df)
+  }
   df <- PeptideCountsFilter(df, CountsCutoff = CountsCutoff)
+  EntriesEliminated = originalEntries - length(unlist(df$Protein.IDs))
+  print(paste(EntriesEliminated," entries were eliminated from the dataset."))
   switch(Intensities, 
          "LFQ" = {df = ExtractLFQIntensities(df)},
          "iBAQ" = {df = ExtractiBAQIntensities(df)},
