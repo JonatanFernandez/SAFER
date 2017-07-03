@@ -43,12 +43,12 @@ Exps <- c("exp1","exp2","exp3","exp4")
 #' @return A dataframe of proteins selected as potential interactive protein candidates, and three other dataframes of protein discarded in the SAFER filters,
 #'         all of them together with their fold change.
 #     
-SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportTables = TRUE) {
+SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportTables = TRUE,OutputName=NULL) {
   
   #-------------------------------------------------
   #                 Helper Functions 
   #-------------------------------------------------
- 
+  
   #Fold Change Calculation: Ratio of the average values, without taking zeroes into account,
   #of the MSI of the biological bait replicates and of the control replicates.
   #Return: values rounded to second significative digit sorted by Fold Change.
@@ -77,7 +77,7 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportTables 
   #Return: 2 dataframes with the mostly absent and the mostly present.
   
   SAFERSecondFilter <- function(x, Controls){
-      if (length(Controls)==3) {
+    if (length(Controls)==3) {
       FilterControlMostlyAbsent <- x[rowSums(x[Controls] == 0) == 3,]
       FilterControlMostlyPresent <- x[rowSums(x[Controls] == 0) < 3,]
       return(list(MostlyAbsent = FilterControlMostlyAbsent, MostlyPresent = FilterControlMostlyPresent))
@@ -116,15 +116,16 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportTables 
   
   #Output
   
-  Output <- function(df,filename,output) {
-    write.table(df, file = paste(filename,"_",deparse(substitute(output)),".txt"), sep = "\t", dec=".")
+  Output <- function(df,filename,output,OutputName=NULL) {
+    write.table(df, file = paste(OutputName,"_",filename,"_",deparse(substitute(output)),".txt",sep = ""), sep = "\t", dec=".")
   }
   
   #-------------------------------------------------
   #           SAFER Core Function Execution
   #-------------------------------------------------
-  
+  #Save Dataframe name
   DataframeName <- deparse(substitute(x))
+  
   #Select columns from dataset
   
   if(FirstColAreProteinIds){
@@ -151,14 +152,19 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportTables 
     FCFilterDiscarded = setNames(data.frame(rownames(FCFiltered$Discarded),FCFiltered$Discarded$FC),c("Discarded: Fold Change < 2","|Fold Change"))
     TriplicateFilterDiscarded = setNames(data.frame(rownames(TriplicateFilter$Discarded),TriplicateFilter$Discarded$FC),c("Discarded: Max(Control) > Min(Exps)","|Fold Change"))
     if(ExportTables){
-      Output(df = SelectedPreys, filename = DataframeName, output = SelectedPreys)
-      Output(df = FirstFilterDiscarded, filename = DataframeName, output = FirstFilterDiscarded)
-      Output(df = FCFilterDiscarded, filename = DataframeName, output = FoldChangeDiscarded)
-      Output(df = TriplicateFilterDiscarded, filename = DataframeName, output = TriplicateFilterDiscarded)
+      mainDir <- getwd()
+      subDir <- paste("/",paste(OutputName,DataframeName,"output", sep = "_"),sep="")
+      dir.create(file.path(mainDir, subDir))
+      setwd(file.path(mainDir, subDir))
+      Output(df = SelectedPreys, filename = DataframeName, output = SelectedPreys,OutputName = OutputName)
+      Output(df = FirstFilterDiscarded, filename = DataframeName, output = FirstFilterDiscarded,OutputName = OutputName)
+      Output(df = FCFilterDiscarded, filename = DataframeName, output = FoldChangeDiscarded,OutputName = OutputName)
+      Output(df = TriplicateFilterDiscarded, filename = DataframeName, output = TriplicateFilterDiscarded,OutputName = OutputName)
+      setwd(mainDir)
     }
     return(list(SelectedPreys = SelectedPreys, FirstFilterDiscarded = FirstFilterDiscarded,
                 FCFilterDiscarded = FCFilterDiscarded,TriplicateFilterDiscarded = TriplicateFilterDiscarded
-                ))
+    ))
   } else if (length(Controls) < 3 | length(Exps) < 3) {
     print("SAFER algorith only allows as input experiments with triplicates or quadruplicates. Please check data input.")
   } else {
@@ -166,14 +172,19 @@ SAFER <- function(x, Controls, Exps, FirstColAreProteinIds = TRUE, ExportTables 
     FirstFilterDiscarded = setNames(data.frame(rownames(FirstFiltered$Discarded), FirstFiltered$Discarded$FC),c("Discarded: # of Exps < 3", "|Fold Change"))
     FCFilterDiscarded = setNames(data.frame(rownames(FCFiltered$Discarded),FCFiltered$Discarded$FC),c("Discarded: Fold Change < 2","|Fold Change"))
     if(ExportTables){
-      Output(df = SelectedPreys, filename = DataframeName, output = SelectedPreys)
-      Output(df = FirstFilterDiscarded, filename = DataframeName, output = FirstFilterDiscarded)
-      Output(df = FCFilterDiscarded, filename = DataframeName, output = FoldChangeDiscarded)
+      mainDir <- getwd()
+      subDir <- paste(OutputName,DataframeName,"output", sep = "_")
+      dir.create(file.path(mainDir, subDir))
+      setwd(file.path(mainDir, subDir))
+      Output(df = SelectedPreys, filename = DataframeName, output = SelectedPreys,OutputName = OutputName)
+      Output(df = FirstFilterDiscarded, filename = DataframeName, output = FirstFilterDiscarded,OutputName = OutputName)
+      Output(df = FCFilterDiscarded, filename = DataframeName, output = FoldChangeDiscarded,OutputName = OutputName)
+      setwd(mainDir)
     }
     return(list(SelectedPreys = SelectedPreys, 
                 FirstFilterDiscarded = FirstFilterDiscarded,
                 FCFilterDiscarded = FCFilterDiscarded
-                ))
+    ))
   }
 }
   
